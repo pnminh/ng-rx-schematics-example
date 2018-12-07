@@ -9,6 +9,7 @@ import { environment } from '../environments/environment';
 import { EffectsModule } from '@ngrx/effects';
 import { AppEffects } from './store/effects/app.effects';
 import { WelcomeComponent } from './welcome/welcome.component';
+import { AuthEffects } from './store/effects/auth.effects';
 
 @NgModule({
   declarations: [
@@ -19,7 +20,7 @@ import { WelcomeComponent } from './welcome/welcome.component';
     BrowserModule,
     StoreModule.forRoot(reducers, { metaReducers }),
     !environment.production ? StoreDevtoolsModule.instrument() : [],
-    EffectsModule.forRoot([AppEffects])
+    EffectsModule.forRoot([AppEffects, AuthEffects])
   ],
   providers: [],
   bootstrap: [AppComponent]
