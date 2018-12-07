@@ -736,3 +736,291 @@ Subscribe to our blog and gain access to our guide developed by our consulting t
 Some ad blockers can block the form below.
 
 ---
+NgRx Tutorial: Accessing State in the Store
+by Rich Franzmeier | Aug 1, 2018
+
+Accessing State
+This post continues my series of NgRx Tutorial posts by showing how to access state in the store by using selectors.  It will complete the circle that started with dispatching an action, then an effect doing asynchronous work and finally the reducer updating state in the store.  The missing piece is accessing that state in a component so that it can be displayed or used in various ways.  For purposes of demonstration, I will be simulating a login in my ‘auth’ slice of state and store a user name and friendly name.  This friendly name will be shown to the user on the welcome page.  I’ll of course use the Star Wars API to get the name.
+
+Before we jump in here are other NgRx tutorials I’ve written:
+
+NgRx Tutorial: Quickly Adding NgRx to Your Angular 6 Project
+NgRx Tutorial: Actions, Reducers and Effects
+ 
+
+This is the goal for the page output:
+
+
+
+Previous posts:  NgRx Setup, Actions/Reducers/Effects
+
+Code:  github
+
+Add Welcome Component
+First I’ll add a welcome component that will show the message.  Of course use the @ngrx/schematics package to do it.
+
+To generate a container, run this command:
+
+
+ng generate container welcome --state store/reducers/index.ts --stateInterface State
+1
+ng generate container welcome --state store/reducers/index.ts --stateInterface State
+ 
+
+This basically is the same as ng g component but adds the store to the constructor:
+
+Creates the welcome component with css, html, ts and spec files
+Injects the ‘store’ into the component
+Adds the component to the app.module declarations
+We’ll get back to this component later.  First we need to understand how to access state from the store using selectors.
+
+ 
+
+Add Selectors to the Auth Reducer
+Before getting to selectors, I’m going to update the auth reducer as shown:
+
+
+export interface State {
+  userName?: string;
+  friendlyName?: string;
+}
+
+export const initialState: State = {
+  userName: null,
+  friendlyName: null
+};
+
+export function reducer(state = initialState, action: authActions.AuthActions): State {
+  switch (action.type) {
+    case authActions.AuthActionTypes.SetAuths:
+      return handleSetAuths(state, action);
+
+    default:
+      return state;
+  }
+}
+
+function handleSetAuths(state: State, action: authActions.SetAuths): State {
+  return {
+    ...state,
+    userName: action.payload.userName,
+    friendlyName: action.payload.friendlyName
+  };
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+23
+24
+25
+26
+27
+export interface State {
+  userName?: string;
+  friendlyName?: string;
+}
+ 
+export const initialState: State = {
+  userName: null,
+  friendlyName: null
+};
+ 
+export function reducer(state = initialState, action: authActions.AuthActions): State {
+  switch (action.type) {
+    case authActions.AuthActionTypes.SetAuths:
+      return handleSetAuths(state, action);
+ 
+    default:
+      return state;
+  }
+}
+ 
+function handleSetAuths(state: State, action: authActions.SetAuths): State {
+  return {
+    ...state,
+    userName: action.payload.userName,
+    friendlyName: action.payload.friendlyName
+  };
+}
+Notes:
+
+Added ‘friendlyName’ to State – this will be shown on the welcome page
+Updated handleSetAuths to take in more than just userName as payload (actions were also updated with a SetAuthsPayload interface with userName and friendlyName as properties)
+ 
+
+Auth Selectors
+Now I’m ready to add selectors to this reducer.  Selectors help us get at the data in the store by using pure functions and keeping most of the logic on the store instead of in the components.  The first step with selectors is to add selectors in your reducer for each property of state as follows:
+
+
+export const getUserName = (state: State) => state.userName;
+export const getFriendlyName = (state: State) => state.friendlyName;
+1
+2
+export const getUserName = (state: State) => state.userName;
+export const getFriendlyName = (state: State) => state.friendlyName;
+These are just pure functions that take a State parameter and return a value on state.  This will be used in the main reducer file to create the selectors there.
+
+ 
+
+Selectors in the Main Reducer (index.ts)
+It’s convention to put the selectors that everyone uses in the main reducer.  For feature modules, you’ll do it in the feature module’s main reducer (that’s a future post).  These selectors are the way for the consumer (usually components) to access a slice of state in the store.  It seems like a lot of busy work (and it is) but we do it this way so that it can be easily unit tested in one spot (the reducers) and easily consumed from the components.
+
+Here are the auth selectors:
+
+
+export const selectAuthState = createFeatureSelector<fromAuth.State>('auth');
+export const getUserName = createSelector(selectAuthState, fromAuth.getUserName);
+export const getFriendlyName = createSelector(selectAuthState, fromAuth.getFriendlyName);
+1
+2
+3
+export const selectAuthState = createFeatureSelector<fromAuth.State>('auth');
+export const getUserName = createSelector(selectAuthState, fromAuth.getUserName);
+export const getFriendlyName = createSelector(selectAuthState, fromAuth.getFriendlyName);
+Notes:
+
+createFeatureSelector and createSelector are imported from ‘@ngrx/store’
+selectAuthState:  this creates a feature selector of type fromAuth.State (the state in the auth reducer)
+The ‘auth’ string must match the property in state
+This will be used to get the auth State for the upcoming createSelector functions
+getUserName:  this creates a selector using selectAuthState and our getUserName selector we defined above
+getFriendlyName:  this creates a selector using selectAuthState and our getFriendlyName selector we defined above
+For a thorough look at selectors in NgRx, take a look at Todd Motto’s post.
+
+ 
+
+Add Friendly Name to the Welcome Component
+Now we are ready to access our friendly name that lives in auth state from our welcome component.
+
+This is our updated welcome component:
+
+
+export class WelcomeComponent implements OnInit {
+  name$: Observable<string>;
+
+  constructor(private store: Store<fromStore.State>) { }
+
+  ngOnInit() {
+    this.name$ = this.store.select(fromStore.getFriendlyName);
+  }
+}
+1
+2
+3
+4
+5
+6
+7
+8
+9
+export class WelcomeComponent implements OnInit {
+  name$: Observable<string>;
+ 
+  constructor(private store: Store<fromStore.State>) { }
+ 
+  ngOnInit() {
+    this.name$ = this.store.select(fromStore.getFriendlyName);
+  }
+}
+Notes:
+
+First, define a ‘name$’ Observable<string> property
+The html will reference this
+Now, populate the name$ with this.store.select(fromStore.getFriendlyName)
+This is using our selector created in the main reducer
+Whenever this value is updated, it will automatically update the component
+This is the html portion:
+
+
+<h1>Welcome to the NgRx Tutorial Application, {{name$ | async}}!</h1>
+1
+<h1>Welcome to the NgRx Tutorial Application, {{name$ | async}}!</h1>
+Notice the ‘async’ pipe.  That is needed for Observables.  It will handle the unsubscribing so there’s no need for you to do it.
+
+This code makes it super easy to access state and show it on your page.  As an alternative, you could have accessed state in this way:
+
+
+this.name$ = this.store.select((state) => state.auth.friendlyName);
+1
+this.name$ = this.store.select((state) => state.auth.friendlyName);
+This is problematic, though, because you have to do null checking and other work to ensure you don’t get errors accessing the state.  With the selector approach, that can be taken care of in a centralized place and heavily unit tested.
+
+ 
+
+Update the Effect to get Star Wars Name
+One last thing to do is update the LoadAuths effect so that it gets us person one from the Star Wars API, namely Luke Skywalker.
+
+
+  @Effect()
+  loadAuths$: Observable<Action> = this.actions$.pipe(
+    ofType(authActions.AuthActionTypes.LoadAuths),
+    switchMap(() => {
+      return this.http.get<any>(`https://swapi.co/api/people/1/`)
+        .pipe(
+          map((person) => {
+            const name: string = person.name;
+            return new authActions.SetAuths({
+              userName: name.replace(" ", ""),
+              friendlyName: name
+            });
+          })
+        )
+    })
+  );
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+  @Effect()
+  loadAuths$: Observable<Action> = this.actions$.pipe(
+    ofType(authActions.AuthActionTypes.LoadAuths),
+    switchMap(() => {
+      return this.http.get<any>(`https://swapi.co/api/people/1/`)
+        .pipe(
+          map((person) => {
+            const name: string = person.name;
+            return new authActions.SetAuths({
+              userName: name.replace(" ", ""),
+              friendlyName: name
+            });
+          })
+        )
+    })
+  );
+Notice how SetAuths is now passing an object with userName and friendlyName.  This will call the SetAuths reducer and update state.  Friendly name will finally appear on our welcome component.
+
+ 
+
+Conclusion
+Accessing state in NgRx is extremely important and is what the components (mainly) consume.  It is done using state selectors that we define in the reducers.  These selectors access a slice of state and should be fully unit tested.  With the knowledge gained in these first three posts, the reader should be able now to develop an Angular app using NgRx for state management.  The final piece of this puzzle is setting up feature modules with their own state and all that goes with that.  That will be tackled in upcoming posts.
