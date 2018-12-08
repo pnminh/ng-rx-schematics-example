@@ -14,9 +14,15 @@ export class AuthEffects {
   public loadAuths$ = this.actions$.pipe(
     ofType(authActions.AuthActionTypes.LoadAuths),
     switchMap(() => {
-      return this.http
-        .get<string>('login')
-        .pipe(map(username => new authActions.SetAuths(username)));
+      return this.http.get<any>(`https://swapi.co/api/people/1/`).pipe(
+        map(person => {
+          const name: string = person.name;
+          return new authActions.SetAuths({
+            userName: name.replace(' ', ''),
+            friendlyName: name
+          });
+        })
+      );
     })
   );
 }

@@ -1,3 +1,5 @@
+import { HttpClientModule } from '@angular/common/http';
+import { HttpModule } from '@angular/http';
 import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 
@@ -12,12 +14,11 @@ import { WelcomeComponent } from './welcome/welcome.component';
 import { AuthEffects } from './store/effects/auth.effects';
 
 @NgModule({
-  declarations: [
-    AppComponent,
-    WelcomeComponent
-  ],
+  declarations: [AppComponent, WelcomeComponent],
   imports: [
     BrowserModule,
+    HttpModule,
+    HttpClientModule,
     StoreModule.forRoot(reducers, { metaReducers }),
     !environment.production ? StoreDevtoolsModule.instrument() : [],
     EffectsModule.forRoot([AppEffects, AuthEffects])
@@ -25,4 +26,4 @@ import { AuthEffects } from './store/effects/auth.effects';
   providers: [],
   bootstrap: [AppComponent]
 })
-export class AppModule { }
+export class AppModule {}

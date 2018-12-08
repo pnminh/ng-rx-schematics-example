@@ -3,10 +3,12 @@ import * as authActions from '../actions/auth.actions';
 
 export interface State {
   userName?: string;
+  friendlyName?: string;
 }
 
 export const initialState: State = {
-  userName: null
+  userName: null,
+  friendlyName: null
 };
 
 export function reducer(
@@ -23,6 +25,9 @@ export function reducer(
 function handleSetAuths(state: State, action: authActions.SetAuths): State {
   return {
     ...state,
-    userName: action.payload
+    userName: action.payload.userName,
+    friendlyName: action.payload.friendlyName
   };
 }
+export const getUserName = (state: State) => state.userName;
+export const getFriendlyName = (state: State) => state.friendlyName;

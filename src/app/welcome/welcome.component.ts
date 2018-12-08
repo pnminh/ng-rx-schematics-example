@@ -1,3 +1,4 @@
+import { Observable } from 'rxjs';
 import { Component, OnInit } from '@angular/core';
 import { Store } from '@ngrx/store';
 import * as fromStore from '../store/reducers';
@@ -8,10 +9,10 @@ import * as fromStore from '../store/reducers';
   styleUrls: ['./welcome.component.css']
 })
 export class WelcomeComponent implements OnInit {
-
-  constructor(private store: Store<fromStore.State>) { }
+  name$: Observable<string>;
+  constructor(private store: Store<fromStore.State>) {}
 
   ngOnInit() {
+    this.name$ = this.store.select(fromStore.getFriendlyName);
   }
-
 }
